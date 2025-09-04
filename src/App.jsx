@@ -3,12 +3,33 @@ import { useState } from "react";
 export default function App() {
   const [url, setUrl] = useState("");
   const [shortUrl, setShortUrl] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // For now, mock short URL (we’ll connect backend later)
-    const mockShortUrl = "http://short.ly/abc123";
-    setShortUrl(mockShortUrl);
+    setError(""); // reset error
+
+    try {
+      const response = await fetch("http://localhost:8000/shorten", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // must match backend (we made it accept both url & longUrl)
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to shorten URL");
+      }
+
+      const data = await response.json();
+      setShortUrl(data.shortUrl);
+    } catch (err) {
+      console.error("Error:", err);
+      setError(err.message || "Something went wrong");
+    }
   };
 
   return (
@@ -35,6 +56,10 @@ export default function App() {
             Shorten URL
           </button>
         </form>
+
+        {error && (
+          <p className="mt-4 text-center text-red-600 font-medium">{error}</p>
+        )}
 
         {shortUrl && (
           <div className="mt-6 text-center">
